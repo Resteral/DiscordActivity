@@ -328,6 +328,17 @@ export default function Home() {
         </section>
 
         <footer className="text-xs text-slate-400 pt-8 border-t border-slate-800">
+          <div className="flex flex-wrap gap-4 mb-2">
+            <a href="/docs/TERMS.md" target="_blank" rel="noopener noreferrer" className="hover:text-slate-200 transition-colors">
+              Terms of Service
+            </a>
+            <a href="/docs/PRIVACY.md" target="_blank" rel="noopener noreferrer" className="hover:text-slate-200 transition-colors">
+              Privacy Policy
+            </a>
+          </div>
+          <div className="mb-2">
+            © 2025 Tug Lobbies • <a href="https://tuglobbies.com" target="_blank" rel="noopener noreferrer" className="hover:text-slate-200 transition-colors">tuglobbies.com</a> • frijj555@gmail.com
+          </div>
           Built for Zealot Hockey communities • Elo and betting are client-side prototypes. For real
           money or persistence, integrate a backend and compliance.
         </footer>
