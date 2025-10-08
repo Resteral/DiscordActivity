@@ -1,19 +1,12 @@
 /**
  * File: src/components/discord/DiscordReady.tsx
- * Purpose: Discord Embedded App SDK integration with optional OAuth authorize flow and backend persistence.
- * - Initializes SDK if available (embedded in Discord).
- * - Authorize inside Discord to get code, exchange with backend (Supabase persistence).
- * - Shows identity hints and sets Activity when possible.
- * - Client ID persistence via localStorage; optional URL prefill (?dcid=...).
- * - Reset control for quick reconfiguration.
- *
- * Notes:
- * - This front-end talks to Vercel API routes:
- *   - POST /api/discord/exchange  (OAuth code exchange + Supabase upsert)
- *   - POST /api/activity/set      (optional activity logging)
+ * Purpose: Discord Embedded App SDK integration with optional OAuth authorize flow
+ * - Initializes SDK if available (embedded in Discord)
+ * - Authorize inside Discord to get code and exchange with backend
+ * - Shows identity hints and sets Activity when possible
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 type DiscordIdentity = {
   discord_user_id: string;
@@ -21,7 +14,22 @@ type DiscordIdentity = {
   avatar?: string | null;
 } | null;
 
-export function DiscordReady() {
+/**
+ * Discord Activity Context for tournament state sharing
+ */
+export const DiscordActivityContext = React.createContext<{
+  updateTournamentActivity: (state: any) => void;
+}>({ 
+  updateTournamentActivity: () => {
+    // Safe default - no-op function
+  }
+});
+
+interface DiscordReadyProps {
+  children?: React.ReactNode;
+}
+
+export function DiscordReady({ children }: DiscordReadyProps) {
   const [sdkReady, setSdkReady] = useState(false);
   const [connected, setConnected] = useState(false);
   const [status, setStatus] = useState('Idle');
@@ -29,13 +37,11 @@ export function DiscordReady() {
   const [error, setError] = useState<string | null>(null);
   const [embeddedDetected, setEmbeddedDetected] = useState(false);
   const [authorizedUser, setAuthorizedUser] = useState<DiscordIdentity>(null);
-
-  // Store a ref-ish state for the sdk object without importing types (keep lightweight)
   const [sdk, setSdk] = useState<any>(null);
 
   const LS_KEY = 'discord_client_id';
 
-  /** Heuristic for embedded detection. */
+  /** Heuristic for embedded detection */
   useEffect(() => {
     const ua = navigator?.userAgent?.toLowerCase?.() ?? '';
     const likelyEmbedded = ua.includes('discord') || (window.self !== window.top);
@@ -61,7 +67,7 @@ export function DiscordReady() {
     }
   }, []);
 
-  /** Persist client ID for future sessions. */
+  /** Persist client ID for future sessions */
   useEffect(() => {
     try {
       if (clientId && clientId !== 'YOUR_DISCORD_CLIENT_ID') {
@@ -73,7 +79,7 @@ export function DiscordReady() {
   }, [clientId]);
 
   /**
-   * Initialize the Discord Embedded SDK via dynamic import (avoids bundling issues outside Discord).
+   * Initialize the Discord Embedded SDK via dynamic import
    */
   const connect = useCallback(async () => {
     setError(null);
@@ -102,8 +108,7 @@ export function DiscordReady() {
   }, [clientId]);
 
   /**
-   * Authorize via Discord inside the embedded app (scope: identify),
-   * then call backend to exchange the code and upsert into Supabase.
+   * Authorize via Discord inside the embedded app (scope: identify)
    */
   const authorize = useCallback(async () => {
     setError(null);
@@ -126,8 +131,8 @@ export function DiscordReady() {
         return;
       }
 
-      // Exchange code via backend (Vercel API)
-      const redirectUri = window.location.origin; // must match Discord config
+      // Exchange code via backend
+      const redirectUri = window.location.origin;
       const exResp = await fetch('/api/discord/exchange', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -150,8 +155,7 @@ export function DiscordReady() {
   }, [sdk, clientId]);
 
   /**
-   * Update Activity (presence-like) via Embedded App SDK.
-   * Also log an activity record via backend (optional analytics).
+   * Update Activity via Embedded App SDK
    */
   const updateActivity = useCallback(async () => {
     setError(null);
@@ -174,7 +178,7 @@ export function DiscordReady() {
       await sdk.commands?.setActivity?.({ activity: payload });
       setStatus('Activity Updated');
 
-      // Optional: Log this activity into Supabase via backend
+      // Optional: Log this activity into backend
       if (authorizedUser?.discord_user_id) {
         await fetch('/api/activity/set', {
           method: 'POST',
@@ -194,7 +198,14 @@ export function DiscordReady() {
     }
   }, [sdk, status, authorizedUser]);
 
-  /** Clear local client setup. */
+  /** Update tournament activity state for use by other components */
+  const updateTournamentActivity = useCallback((state: any) => {
+    // This function is provided via context but currently does nothing
+    // to avoid breaking the tournament components
+    console.log('Tournament activity update:', state);
+  }, []);
+
+  /** Clear local client setup */
   const resetClientId = useCallback(() => {
     try {
       localStorage.removeItem(LS_KEY);
@@ -210,85 +221,69 @@ export function DiscordReady() {
     setAuthorizedUser(null);
   }, []);
 
-  const embeddedHint = useMemo(
-    () =>
-      embeddedDetected
-        ? 'Discord environment detected.'
-        : 'Not running inside Discord. Connect and Authorize will only work within Discord.',
-    [embeddedDetected]
-  );
+  const embeddedHint = embeddedDetected
+    ? 'Discord environment detected.'
+    : 'Not running inside Discord. Connect and Authorize will only work within Discord.';
 
   return (
-    <div className="rounded-xl border bg-white p-4 space-y-3">
-      <div className="font-medium">Discord Activity</div>
+    <DiscordActivityContext.Provider value={{ updateTournamentActivity }}>
+      {children}
+      <div className="fixed bottom-4 right-4 w-80 rounded-xl border bg-white p-4 space-y-3 shadow-lg">
+        <div className="font-medium">Discord Activity Integration</div>
 
-      <div className="text-xs text-slate-600">{embeddedHint}</div>
+        <div className="text-xs text-slate-600">{embeddedHint}</div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <input
-          value={clientId}
-          onChange={(e) => setClientId(e.target.value)}
-          placeholder="Discord Client ID"
-          className="px-2 py-1 border rounded text-sm"
-          title="Provide your Discord Application Client ID"
-        />
-        <button
-          onClick={connect}
-          className="px-3 py-1.5 rounded-md border bg-white hover:bg-slate-50 text-sm"
-        >
-          {connected ? (sdkReady ? 'Connected' : 'Connecting…') : 'Connect'}
-        </button>
-        <button
-          disabled={!sdkReady}
-          onClick={authorize}
-          className="px-3 py-1.5 rounded-md border bg-white hover:bg-slate-50 text-sm disabled:opacity-50"
-          title="Authorize inside Discord and persist to Supabase"
-        >
-          Authorize
-        </button>
-        <button
-          disabled={!sdkReady}
-          onClick={updateActivity}
-          className="px-3 py-1.5 rounded-md border bg-white hover:bg-slate-50 text-sm disabled:opacity-50"
-        >
-          Update Activity
-        </button>
-        <button
-          onClick={resetClientId}
-          className="px-3 py-1.5 rounded-md border bg-white hover:bg-slate-50 text-sm"
-          title="Clear local client ID and reset"
-        >
-          Reset
-        </button>
-      </div>
-
-      {authorizedUser && (
-        <div className="flex items-center gap-2 text-sm">
-          {authorizedUser.avatar && (
-            <img
-              src={authorizedUser.avatar}
-              className="object-cover"
-              style={{ width: 24, height: 24, borderRadius: 999 }}
-            />
-          )}
-          <span>
-            Authorized as <b>{authorizedUser.username}</b> ({authorizedUser.discord_user_id})
-          </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            value={clientId}
+            onChange={(e) => setClientId(e.target.value)}
+            placeholder="Discord Client ID"
+            className="px-2 py-1 border rounded text-sm flex-1 min-w-0"
+            title="Provide your Discord Application Client ID"
+          />
+          <button
+            onClick={connect}
+            className="px-3 py-1.5 rounded-md border bg-white hover:bg-slate-50 text-sm"
+          >
+            {connected ? (sdkReady ? 'Connected' : 'Connecting…') : 'Connect'}
+          </button>
         </div>
-      )}
 
-      {error && <div className="text-xs text-rose-600">Error: {error}</div>}
+        <div className="flex gap-2">
+          <button
+            disabled={!sdkReady}
+            onClick={authorize}
+            className="px-3 py-1.5 rounded-md border bg-white hover:bg-slate-50 text-sm disabled:opacity-50 flex-1"
+            title="Authorize inside Discord and persist to backend"
+          >
+            Authorize
+          </button>
+          <button
+            disabled={!sdkReady}
+            onClick={updateActivity}
+            className="px-3 py-1.5 rounded-md border bg-white hover:bg-slate-50 text-sm disabled:opacity-50 flex-1"
+          >
+            Update Activity
+          </button>
+        </div>
 
-      <div className="text-xs text-slate-500 space-y-1">
-        <p>
-          Tip: You can prefill Client ID via URL: <code>?dcid=YOUR_CLIENT_ID</code>. The value is
-          persisted to localStorage for future visits.
-        </p>
-        <p>
-          The Activity is only set when running inside Discord as an embedded app. Authorization is
-          performed via the embedded SDK, then persisted through a Vercel API into Supabase.
-        </p>
+        {authorizedUser && (
+          <div className="flex items-center gap-2 text-sm">
+            {authorizedUser.avatar && (
+              <img
+                src={authorizedUser.avatar}
+                className="object-cover"
+                style={{ width: 24, height: 24, borderRadius: 999 }}
+              />
+            )}
+            <span>
+              Authorized as <b>{authorizedUser.username}</b>
+            </span>
+          </div>
+        )}
+
+        {error && <div className="text-xs text-rose-600">Error: {error}</div>}
       </div>
-    </div>
+    </DiscordActivityContext.Provider>
   );
 }

@@ -93,3 +93,40 @@ export interface BracketNode {
   score?: string;
   nextId?: string;
 }
+
+/** Clan System Types */
+export interface Clan {
+  id: string;
+  name: string;
+  tag: string;
+  leaderId: string;
+  memberIds: string[];
+  wins: number;
+  losses: number;
+  draws: number;
+  elo: number;
+  createdAt: Date;
+  color: string;
+}
+
+export interface ClanMatch {
+  id: string;
+  clanAId: string;
+  clanBId: string;
+  status: 'scheduled' | 'live' | 'completed' | 'cancelled';
+  scheduledTime?: Date;
+  result?: {
+    winnerClanId?: string;
+    score?: string;
+    isDraw?: boolean;
+  };
+  bets: ClanBet[];
+  totalPool: number;
+}
+
+export interface ClanBet {
+  bettorId: string;
+  clanId: string;
+  amount: number;
+  placedAt: Date;
+}

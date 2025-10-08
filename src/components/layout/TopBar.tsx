@@ -1,63 +1,39 @@
 /**
  * File: src/components/layout/TopBar.tsx
- * Purpose: Global top bar with app title, quick anchors, and connected user's wallet at top-right.
+ * Purpose: Top navigation bar component
  */
 
-import React, { useMemo } from 'react';
-import type { Player } from '../../types';
+import React from 'react';
 
 /**
- * TopBar shows app brand, quick navigation anchors, and the connected user's wallet balance.
+ * TopBar component
+ * Navigation bar with app branding and user controls
  */
-export default function TopBar({
-  connectedId,
-  players,
-}: {
-  connectedId: string | null;
-  players: Player[];
-}) {
-  const current = useMemo(
-    () => players.find((p) => p.id === connectedId) || null,
-    [players, connectedId]
-  );
-
+export function TopBar() {
   return (
-    <header className="sticky top-0 z-20 border-b border-slate-800/60 bg-slate-900/80 backdrop-blur supports-[backdrop-filter]:bg-slate-900/60">
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_12px_#22d3ee]" />
-          <span className="font-semibold text-slate-100">ZH Arena</span>
-        </div>
-        <nav className="hidden md:flex items-center gap-4 text-sm">
-          <a href="#lobbies" className="text-slate-300 hover:text-white transition-colors">Matchmaking</a>
-          <a href="#tournaments" className="text-slate-300 hover:text-white transition-colors">Tournaments</a>
-          <a href="#stats" className="text-slate-300 hover:text-white transition-colors">Stats</a>
-          <a href="#discord" className="text-slate-300 hover:text-white transition-colors">Discord</a>
-        </nav>
-        <div className="ml-auto flex items-center gap-2">
-          {current ? (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-slate-300">{current.name}</span>
-              <span
-                className="inline-flex items-center gap-1 rounded-md border border-emerald-400/40 bg-emerald-500/15 text-emerald-300 px-2 py-0.5 text-xs"
-                title="Wallet balance"
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="opacity-80">
-                  <path d="M21 7H3a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h18V7Zm-2 6h-5a1 1 0 1 1 0-2h5v2Z" />
-                </svg>
-                {current.wallet}
-              </span>
+    <div className="bg-slate-800/50 backdrop-blur-sm border-b border-slate-700">
+      <div className="container mx-auto px-4 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="text-white font-bold text-xl">Zealot Hockey</div>
+            <nav className="hidden md:flex space-x-6">
+              <a href="#" className="text-slate-300 hover:text-white transition-colors">Tournaments</a>
+              <a href="#" className="text-slate-300 hover:text-white transition-colors">Leaderboards</a>
+              <a href="#" className="text-slate-300 hover:text-white transition-colors">Stats</a>
+              <a href="#" className="text-slate-300 hover:text-white transition-colors">Clans</a>
+            </nav>
+          </div>
+          
+          <div className="flex items-center space-x-4">
+            <div className="text-slate-300 text-sm">
+              Connected Players: <span className="text-cyan-300 font-medium">6</span>
             </div>
-          ) : (
-            <a
-              href="#lobbies"
-              className="text-xs md:text-sm rounded-md border border-slate-700 bg-slate-950/60 hover:bg-slate-900/60 px-2 py-1 text-slate-300"
-            >
-              Connect account below
-            </a>
-          )}
+            <div className="w-8 h-8 bg-cyan-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
+              U
+            </div>
+          </div>
         </div>
       </div>
-    </header>
+    </div>
   );
 }
