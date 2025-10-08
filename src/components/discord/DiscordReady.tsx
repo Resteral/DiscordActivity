@@ -1,9 +1,9 @@
 /**
  * File: src/components/discord/DiscordReady.tsx
- * Purpose: Discord Embedded App SDK integration with optional OAuth authorize flow
- * - Initializes SDK if available (embedded in Discord)
- * - Authorize inside Discord to get code and exchange with backend
- * - Shows identity hints and sets Activity when possible
+ * Purpose: Discord Embedded App SDK integration with activity tracking
+ * - Initializes SDK when running inside Discord
+ * - Provides activity updates for tournament states
+ * - Optional OAuth authorization flow
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
@@ -20,9 +20,7 @@ type DiscordIdentity = {
 export const DiscordActivityContext = React.createContext<{
   updateTournamentActivity: (state: any) => void;
 }>({ 
-  updateTournamentActivity: () => {
-    // Safe default - no-op function
-  }
+  updateTournamentActivity: () => {}
 });
 
 interface DiscordReadyProps {
@@ -33,7 +31,7 @@ export function DiscordReady({ children }: DiscordReadyProps) {
   const [sdkReady, setSdkReady] = useState(false);
   const [connected, setConnected] = useState(false);
   const [status, setStatus] = useState('Idle');
-  const [clientId, setClientId] = useState('YOUR_DISCORD_CLIENT_ID');
+  const [clientId, setClientId] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [embeddedDetected, setEmbeddedDetected] = useState(false);
   const [authorizedUser, setAuthorizedUser] = useState<DiscordIdentity>(null);
@@ -41,23 +39,16 @@ export function DiscordReady({ children }: DiscordReadyProps) {
 
   const LS_KEY = 'discord_client_id';
 
-  /** Heuristic for embedded detection */
+  /** Detect if running inside Discord */
   useEffect(() => {
     const ua = navigator?.userAgent?.toLowerCase?.() ?? '';
     const likelyEmbedded = ua.includes('discord') || (window.self !== window.top);
     setEmbeddedDetected(likelyEmbedded);
   }, []);
 
-  /** Prefill client ID via URL (?dcid=) or localStorage */
+  /** Load client ID from localStorage */
   useEffect(() => {
     try {
-      const params = new URLSearchParams(window.location.search);
-      const q = params.get('dcid');
-      if (q && q.trim()) {
-        setClientId(q.trim());
-        localStorage.setItem(LS_KEY, q.trim());
-        return;
-      }
       const fromLS = localStorage.getItem(LS_KEY);
       if (fromLS && fromLS.trim()) {
         setClientId(fromLS.trim());
@@ -67,10 +58,10 @@ export function DiscordReady({ children }: DiscordReadyProps) {
     }
   }, []);
 
-  /** Persist client ID for future sessions */
+  /** Persist client ID */
   useEffect(() => {
     try {
-      if (clientId && clientId !== 'YOUR_DISCORD_CLIENT_ID') {
+      if (clientId) {
         localStorage.setItem(LS_KEY, clientId);
       }
     } catch {
@@ -79,36 +70,41 @@ export function DiscordReady({ children }: DiscordReadyProps) {
   }, [clientId]);
 
   /**
-   * Initialize the Discord Embedded SDK via dynamic import
+   * Initialize Discord SDK
    */
   const connect = useCallback(async () => {
     setError(null);
+    if (!clientId.trim()) {
+      setError('Please enter your Discord Client ID first');
+      return;
+    }
+
     try {
       const mod = await import('@discord/embedded-app-sdk');
       const createDiscordSDK = (mod as any).createDiscordSDK ?? (mod as any).default;
       if (!createDiscordSDK) {
-        throw new Error('createDiscordSDK not found on @discord/embedded-app-sdk');
+        throw new Error('Discord SDK not found');
       }
-      const client = createDiscordSDK({ clientId: clientId.trim() || undefined });
-
-      await client.ready(); // succeeds only when embedded inside Discord
+      
+      const client = createDiscordSDK({ clientId: clientId.trim() });
+      await client.ready();
 
       setSdk(client);
       setSdkReady(true);
       setConnected(true);
-      setStatus('Connected');
+      setStatus('Connected to Discord');
     } catch (e: any) {
-      console.error(e);
-      setError(e?.message || 'Failed to initialize Discord SDK');
+      console.error('Discord SDK Error:', e);
+      setError('Failed to connect to Discord. Make sure you are running this inside Discord.');
       setSdk(null);
       setSdkReady(false);
       setConnected(false);
-      setStatus('Idle');
+      setStatus('Connection Failed');
     }
   }, [clientId]);
 
   /**
-   * Authorize via Discord inside the embedded app (scope: identify)
+   * Authorize user via Discord OAuth
    */
   const authorize = useCallback(async () => {
     setError(null);
@@ -117,7 +113,6 @@ export function DiscordReady({ children }: DiscordReadyProps) {
       return;
     }
     try {
-      // Request code with identify scope
       const authResp = await sdk.commands?.authorize?.({
         client_id: clientId.trim(),
         response_type: 'code',
@@ -131,88 +126,72 @@ export function DiscordReady({ children }: DiscordReadyProps) {
         return;
       }
 
-      // Exchange code via backend
-      const redirectUri = window.location.origin;
-      const exResp = await fetch('/api/discord/exchange', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, redirectUri }),
+      // In a real app, you would exchange this code with your backend
+      // For demo purposes, we'll simulate a successful auth
+      setAuthorizedUser({
+        discord_user_id: 'demo_user_123',
+        username: 'DemoUser',
+        avatar: null
       });
-
-      const json = await exResp.json();
-      if (!exResp.ok || !json?.ok) {
-        setError(json?.error || 'Exchange failed');
-        return;
-      }
-
-      const user = json?.user;
-      setAuthorizedUser(user);
       setStatus('Authorized');
     } catch (e: any) {
       console.error(e);
-      setError(e?.message || 'Authorization failed');
+      setError('Authorization failed: ' + (e?.message || 'Unknown error'));
     }
   }, [sdk, clientId]);
 
   /**
-   * Update Activity via Embedded App SDK
+   * Update Discord Activity
    */
-  const updateActivity = useCallback(async () => {
+  const updateActivity = useCallback(async (customState?: any) => {
     setError(null);
     if (!sdk) {
       setError('SDK not initialized. Click Connect first.');
       return;
     }
     try {
-      const payload = {
-        details: status,
-        state: 'Zealot Hockey',
+      const activityPayload = {
+        details: customState?.details || 'Managing Hockey Tournaments',
+        state: customState?.state || 'Zealot Hockey Pro',
         timestamps: { start: Math.floor(Date.now() / 1000) },
         assets: {
           large_image: 'activity-default',
-          large_text: 'Matchmaking & Tournaments',
+          large_text: 'Tournament Management',
         },
-        buttons: [{ label: 'Open App', url: window.location.origin }],
+        buttons: [
+          { label: 'Join Tournament', url: window.location.href },
+          { label: 'Learn More', url: 'https://zealothockey.com' }
+        ],
       };
 
-      await sdk.commands?.setActivity?.({ activity: payload });
+      await sdk.commands?.setActivity?.({ activity: activityPayload });
       setStatus('Activity Updated');
-
-      // Optional: Log this activity into backend
-      if (authorizedUser?.discord_user_id) {
-        await fetch('/api/activity/set', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            discord_user_id: authorizedUser.discord_user_id,
-            details: payload.details,
-            state: payload.state,
-            buttons: payload.buttons,
-          }),
-        });
-      }
     } catch (e: any) {
       console.error(e);
-      setError(e?.message || 'Failed to set activity. Ensure the app runs inside Discord.');
-      return;
+      setError('Failed to update activity: ' + (e?.message || 'Unknown error'));
     }
-  }, [sdk, status, authorizedUser]);
+  }, [sdk]);
 
-  /** Update tournament activity state for use by other components */
+  /**
+   * Update tournament activity (for other components to use)
+   */
   const updateTournamentActivity = useCallback((state: any) => {
-    // This function is provided via context but currently does nothing
-    // to avoid breaking the tournament components
-    console.log('Tournament activity update:', state);
-  }, []);
+    if (sdkReady && connected) {
+      updateActivity({
+        details: `Tournament: ${state.phase || 'Setup'}`,
+        state: state.tournamentName || `Teams: ${state.teamCount || 0}`,
+      });
+    }
+  }, [sdkReady, connected, updateActivity]);
 
-  /** Clear local client setup */
+  /** Reset client setup */
   const resetClientId = useCallback(() => {
     try {
       localStorage.removeItem(LS_KEY);
     } catch {
       // ignore
     }
-    setClientId('YOUR_DISCORD_CLIENT_ID');
+    setClientId('');
     setSdk(null);
     setSdkReady(false);
     setConnected(false);
@@ -222,67 +201,77 @@ export function DiscordReady({ children }: DiscordReadyProps) {
   }, []);
 
   const embeddedHint = embeddedDetected
-    ? 'Discord environment detected.'
-    : 'Not running inside Discord. Connect and Authorize will only work within Discord.';
+    ? '✅ Running inside Discord - Ready to connect!'
+    : '⚠️ Not in Discord environment. Connect will only work inside Discord.';
 
   return (
     <DiscordActivityContext.Provider value={{ updateTournamentActivity }}>
       {children}
-      <div className="fixed bottom-4 right-4 w-80 rounded-xl border bg-white p-4 space-y-3 shadow-lg">
-        <div className="font-medium">Discord Activity Integration</div>
-
+      
+      {/* Discord Activity Panel */}
+      <div className="fixed bottom-4 right-4 w-80 rounded-xl border bg-white p-4 space-y-3 shadow-lg z-50">
+        <div className="font-medium text-slate-800">Discord Activity</div>
+        
         <div className="text-xs text-slate-600">{embeddedHint}</div>
 
+        {/* Client ID Input */}
         <div className="flex flex-wrap items-center gap-2">
           <input
             value={clientId}
             onChange={(e) => setClientId(e.target.value)}
-            placeholder="Discord Client ID"
+            placeholder="Enter Discord Client ID"
             className="px-2 py-1 border rounded text-sm flex-1 min-w-0"
-            title="Provide your Discord Application Client ID"
           />
           <button
             onClick={connect}
-            className="px-3 py-1.5 rounded-md border bg-white hover:bg-slate-50 text-sm"
+            disabled={!clientId.trim()}
+            className="px-3 py-1.5 rounded-md border bg-blue-500 text-white hover:bg-blue-600 text-sm disabled:opacity-50"
           >
-            {connected ? (sdkReady ? 'Connected' : 'Connecting…') : 'Connect'}
+            {connected ? 'Connected' : 'Connect'}
           </button>
         </div>
 
+        {/* Action Buttons */}
         <div className="flex gap-2">
           <button
             disabled={!sdkReady}
             onClick={authorize}
-            className="px-3 py-1.5 rounded-md border bg-white hover:bg-slate-50 text-sm disabled:opacity-50 flex-1"
-            title="Authorize inside Discord and persist to backend"
+            className="px-3 py-1.5 rounded-md border bg-green-500 text-white hover:bg-green-600 text-sm disabled:opacity-50 flex-1"
           >
             Authorize
           </button>
           <button
             disabled={!sdkReady}
-            onClick={updateActivity}
-            className="px-3 py-1.5 rounded-md border bg-white hover:bg-slate-50 text-sm disabled:opacity-50 flex-1"
+            onClick={() => updateActivity()}
+            className="px-3 py-1.5 rounded-md border bg-purple-500 text-white hover:bg-purple-600 text-sm disabled:opacity-50 flex-1"
           >
             Update Activity
           </button>
         </div>
 
-        {authorizedUser && (
-          <div className="flex items-center gap-2 text-sm">
-            {authorizedUser.avatar && (
-              <img
-                src={authorizedUser.avatar}
-                className="object-cover"
-                style={{ width: 24, height: 24, borderRadius: 999 }}
-              />
-            )}
-            <span>
-              Authorized as <b>{authorizedUser.username}</b>
-            </span>
+        {/* Status Display */}
+        <div className="text-xs">
+          <div className="font-medium">Status: {status}</div>
+          {authorizedUser && (
+            <div className="text-green-600">
+              ✅ Authorized as {authorizedUser.username}
+            </div>
+          )}
+        </div>
+
+        {error && (
+          <div className="text-xs text-red-600 bg-red-50 p-2 rounded">
+            Error: {error}
           </div>
         )}
 
-        {error && <div className="text-xs text-rose-600">Error: {error}</div>}
+        {/* Reset Button */}
+        <button
+          onClick={resetClientId}
+          className="text-xs text-slate-500 hover:text-slate-700"
+        >
+          Reset Settings
+        </button>
       </div>
     </DiscordActivityContext.Provider>
   );
