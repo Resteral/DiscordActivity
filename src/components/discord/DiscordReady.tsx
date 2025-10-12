@@ -155,7 +155,7 @@ export function DiscordReady({ children }: DiscordReadyProps) {
         state: customState?.state || 'Zealot Hockey Pro',
         timestamps: { start: Math.floor(Date.now() / 1000) },
         assets: {
-          large_image: 'activity-default',
+          large_image: 'hockey-activity',
           large_text: 'Tournament Management',
         },
         buttons: [
