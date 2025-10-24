@@ -1,34 +1,39 @@
 /**
  * Discord Test Page
- * Absolute minimal page to verify basic functionality
+ * Simple test page for Discord activity links
  */
+
+import React from 'react';
+
 export default function DiscordTest() {
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      color: 'white',
-      padding: '20px',
-      textAlign: 'center',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: 'center'
-    }}>
-      <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>
-        🎯 Discord Test
-      </h1>
-      <p style={{ fontSize: '1.125rem', marginBottom: '2rem' }}>
-        Basic rendering test - if you see this, React is working
-      </p>
-      <div style={{
-        background: 'rgba(255,255,255,0.2)',
-        padding: '1rem',
-        borderRadius: '8px'
-      }}>
-        <p style={{ fontWeight: '600' }}>✅ Status: Working</p>
-        <p style={{ fontSize: '0.875rem', opacity: 0.9 }}>No JavaScript errors</p>
+    <div className="min-h-screen bg-gradient-to-br from-green-600 to-blue-700 text-white p-4">
+      <div className="max-w-md mx-auto text-center pt-16">
+        <h1 className="text-4xl font-bold mb-4">🎯 Discord Activity Test</h1>
+        <p className="text-lg mb-6">This page confirms the app is working in Discord</p>
+        
+        <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 mb-6">
+          <h2 className="text-xl font-semibold mb-3">Status Indicators</h2>
+          <div className="space-y-2">
+            <div className="bg-green-500/20 p-3 rounded">
+              <p className="font-semibold">✅ React App Loaded</p>
+            </div>
+            <div className="bg-blue-500/20 p-3 rounded">
+              <p className="font-semibold">🔗 Routing Working</p>
+            </div>
+            <div className="bg-purple-500/20 p-3 rounded">
+              <p className="font-semibold">🎨 Styling Applied</p>
+            </div>
+          </div>
+        </div>
+
+        <a 
+          href="#/" 
+          className="inline-block bg-white text-blue-600 px-6 py-2 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+        >
+          Back to Home
+        </a>
       </div>
     </div>
-  )
+  );
 }
