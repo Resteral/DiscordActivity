@@ -1,3 +1,7 @@
+/**
+ * Main App Component with Discord Activity Integration
+ * Handles routing and Discord SDK initialization
+ */
 import { HashRouter, Route, Routes } from 'react-router'
 import HomePage from './pages/Home'
 import DiscordActivity from './pages/DiscordActivity'

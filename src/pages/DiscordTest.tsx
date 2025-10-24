@@ -1,27 +1,34 @@
 /**
- * Minimal Discord Activity Test Page
- * Barebones version to test basic functionality
+ * Discord Test Page
+ * Absolute minimal page to verify basic functionality
  */
 export default function DiscordTest() {
   return (
-    <div style={{ 
-      padding: '20px', 
+    <div style={{
+      minHeight: '100vh',
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       color: 'white',
-      minHeight: '100vh',
+      padding: '20px',
       textAlign: 'center',
-      fontFamily: 'Arial, sans-serif'
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      alignItems: 'center'
     }}>
-      <h1>🎯 Discord Activity Test</h1>
-      <p>If you can see this, the app is loading in Discord.</p>
-      <div style={{ 
-        marginTop: '20px', 
-        padding: '10px', 
-        background: 'rgba(255,255,255,0.2)', 
-        borderRadius: '8px' 
+      <h1 style={{ fontSize: '2.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>
+        🎯 Discord Test
+      </h1>
+      <p style={{ fontSize: '1.125rem', marginBottom: '2rem' }}>
+        Basic rendering test - if you see this, React is working
+      </p>
+      <div style={{
+        background: 'rgba(255,255,255,0.2)',
+        padding: '1rem',
+        borderRadius: '8px'
       }}>
-        <strong>Status:</strong> ✅ Basic rendering working
+        <p style={{ fontWeight: '600' }}>✅ Status: Working</p>
+        <p style={{ fontSize: '0.875rem', opacity: 0.9 }}>No JavaScript errors</p>
       </div>
     </div>
-  );
+  )
 }
