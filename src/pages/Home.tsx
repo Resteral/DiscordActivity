@@ -1,109 +1,126 @@
 /**
  * Home Page
  * Purpose:
- * - Provide a welcoming hero with clear entrances to key flows.
- * - Serve as a non-empty, informative landing per project rules.
+ * - Provide a welcoming landing with clear entrances to key areas.
+ * - Showcase features with a clean, accessible layout and strong contrast.
  */
 
 import React from 'react';
-import { Gamepad2, Trophy, BarChart3 } from 'lucide-react';
+import { Rocket, Activity, TestTube2, Trophy, Users, LineChart } from 'lucide-react';
 
 /**
- * CTA button rendered as an anchor that works with hash-based routing.
+ * CTAButton
+ * Description: Simple anchor-based CTA that works with hash routing (no react-router-dom).
  */
-function ButtonLink(props: { href: string; label: string; variant?: 'primary' | 'secondary' }) {
-  const { href, label, variant = 'primary' } = props;
+function CTAButton({
+  href,
+  label,
+  icon: Icon,
+  variant = 'primary',
+}: {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  variant?: 'primary' | 'secondary';
+}) {
   const base =
-    'inline-flex items-center justify-center rounded-md px-5 py-2.5 text-sm font-medium transition-colors';
+    'group inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2';
   const styles =
     variant === 'primary'
-      ? 'bg-indigo-600 text-white hover:bg-indigo-700 focus-visible:outline-indigo-600'
-      : 'bg-white/10 text-white hover:bg-white/20 focus-visible:outline-white';
+      ? 'bg-indigo-600 text-white hover:bg-indigo-700 focus-visible:ring-indigo-400'
+      : 'bg-white/10 text-white hover:bg-white/20 focus-visible:ring-white/50 border border-white/20';
   return (
-    <a
-      href={href}
-      className={`${base} ${styles} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2`}
-    >
-      {label}
+    <a href={href} className={`${base} ${styles}`} aria-label={label}>
+      <Icon className="h-4 w-4" />
+      <span>{label}</span>
     </a>
   );
 }
 
 /**
- * Feature highlight card.
+ * FeatureCard
+ * Description: Small, reusable card for highlighting a feature.
  */
-function FeatureCard(props: { icon: React.ReactNode; title: string; desc: string }) {
-  const { icon, title, desc } = props;
+function FeatureCard({
+  icon: Icon,
+  title,
+  desc,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  desc: string;
+}) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
-      <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-600/20 text-indigo-300">
-        {icon}
+    <div className="rounded-xl border border-slate-200/60 bg-white p-5 shadow-sm transition hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
+      <div className="flex items-center gap-3">
+        <div className="rounded-lg bg-indigo-50 p-2 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300">
+          <Icon className="h-5 w-5" />
+        </div>
+        <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">{title}</h3>
       </div>
-      <h3 className="mb-1 text-base font-semibold text-white">{title}</h3>
-      <p className="text-sm text-white/70">{desc}</p>
+      <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-400">{desc}</p>
     </div>
   );
 }
 
 /**
- * Home component with hero and feature grid.
+ * Home
+ * Description: Main landing. Uses anchors to navigate to hash routes.
  */
 export default function Home() {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 text-slate-100">
-      <section className="relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 opacity-40">
-          <img src="https://pub-cdn.sider.ai/u/U005HEVRO98/web-coder/68e03ea56cd86d39750c1cbd/resource/18f37807-0594-44b5-b434-61eb61d1c702.jpg" className="h-full w-full object-cover" />
+    <div className="min-h-[100dvh] bg-gradient-to-b from-slate-50 to-white text-slate-900 dark:from-slate-950 dark:to-slate-950 dark:text-slate-100">
+      {/* Hero */}
+      <section className="relative">
+        <div className="absolute inset-0 -z-10">
+          <img src="https://pub-cdn.sider.ai/u/U005HEVRO98/web-coder/68e03ea56cd86d39750c1cbd/resource/d2b3e410-1671-4ff2-b533-01f7d36dafd8.jpg" className="h-full w-full object-cover opacity-30" />
         </div>
-        <div className="relative mx-auto flex max-w-6xl flex-col-reverse items-center gap-10 px-6 py-20 md:flex-row md:gap-16 md:py-24">
-          <div className="w-full md:w-1/2">
-            <span className="mb-3 inline-block rounded-full border border-indigo-500/30 bg-indigo-500/10 px-3 py-1 text-xs font-medium text-indigo-300">
-              Multiplayer · Drafts · Leaderboards
-            </span>
-            <h1 className="mt-2 text-4xl font-extrabold leading-tight tracking-tight text-white md:text-5xl">
-              Organize matches, draft teams, and climb the leaderboard
-            </h1>
-            <p className="mt-4 max-w-prose text-base text-white/80">
-              Run tournaments, manage lobbies, and track ELO—seamlessly integrated with Discord.
-              Start an activity or try the demo page to verify your setup.
-            </p>
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <ButtonLink href="#/activity" label="Open Activity" variant="primary" />
-              <ButtonLink href="#/test" label="Open Test Page" variant="secondary" />
+        <div className="mx-auto max-w-6xl px-6 py-16 sm:py-20">
+          <div className="grid items-center gap-10 md:grid-cols-2">
+            <div>
+              <span className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-medium text-indigo-700 dark:border-indigo-900/40 dark:bg-indigo-900/20 dark:text-indigo-300">
+                <Rocket className="h-3.5 w-3.5" />
+                Ready to launch
+              </span>
+              <h1 className="mt-4 text-3xl font-extrabold leading-tight sm:text-4xl">
+                Build tournaments, lobbies, and stats with ease
+              </h1>
+              <p className="mt-3 max-w-prose text-slate-600 dark:text-slate-400">
+                Manage drafts, leaderboards, and Discord activity from one polished interface. Navigate using the
+                buttons below to explore live features.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <CTAButton href="#/activity" label="Open Discord Activity" icon={Activity} variant="primary" />
+                <CTAButton href="#/test" label="Run Test Page" icon={TestTube2} variant="secondary" />
+              </div>
             </div>
-            <p className="mt-3 text-xs text-white/60">
-              Tip: Use the Test page to quickly validate routing and UI.
-            </p>
-          </div>
-
-          <div className="w-full md:w-1/2">
-            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-3 shadow-2xl">
-              <img src="https://pub-cdn.sider.ai/u/U005HEVRO98/web-coder/68e03ea56cd86d39750c1cbd/resource/53a6735a-776e-44e7-9a98-35eb43b6adaf.jpg" className="h-64 w-full rounded-xl object-cover md:h-80" />
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-indigo-600/20 to-transparent" />
+            <div className="relative overflow-hidden rounded-2xl border border-slate-200/60 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <img src="https://pub-cdn.sider.ai/u/U005HEVRO98/web-coder/68e03ea56cd86d39750c1cbd/resource/30bd3dbb-15f7-469b-b899-16c559f18b7b.jpg" className="h-72 w-full object-cover" />
             </div>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-6 pb-20">
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+      {/* Features */}
+      <section className="mx-auto max-w-6xl px-6 pb-16">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           <FeatureCard
-            icon={<Gamepad2 className="h-5 w-5" />}
-            title="Smart Lobbies"
-            desc="Public or pro lobbies with matchmaking and owner controls."
+            icon={Trophy}
+            title="Tournament Modes"
+            desc="Auction and snake drafts with intuitive controls and clear visuals."
           />
           <FeatureCard
-            icon={<Trophy className="h-5 w-5" />}
-            title="Draft Modes"
-            desc="Snake and auction drafts with bracket visualization."
+            icon={Users}
+            title="Lobby System"
+            desc="Public and pro lobbies with smooth matchmaking and results upload."
           />
           <FeatureCard
-            icon={<BarChart3 className="h-5 w-5" />}
-            title="ELO + Stats"
-            desc="Upload CSVs, compute ELO, and display leaderboards."
+            icon={LineChart}
+            title="Stats & ELO"
+            desc="Leaderboards, CSV importers, and robust ELO calculations."
           />
         </div>
       </section>
-    </main>
+    </div>
   );
 }
